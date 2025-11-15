@@ -110,6 +110,3 @@ def load_webhooks(webhook_url: str) -> None:
         target_type="project",
     )
 
-
-if __name__ == "__main__":
-    load_webhooks()

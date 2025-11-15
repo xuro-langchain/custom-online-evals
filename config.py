@@ -8,11 +8,24 @@ load_dotenv(".env")
 
 client = Client()
 
+# LangSmith Variables
 LANGSMITH_API_URL = os.getenv("LANGSMITH_API_URL", "https://api.smith.langchain.com")
 LANGSMITH_API_KEY = os.getenv("LANGSMITH_API_KEY")
 LANGSMITH_PROJECT = os.getenv("LANGSMITH_PROJECT")
-
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+# Render Variables
+RENDER_API_KEY = os.getenv("RENDER_API_KEY")
+RENDER_OWNER_ID = os.getenv("RENDER_OWNER_ID")  # Your Render workspace ID
+RENDER_API_BASE = "https://api.render.com/v1"
+
+SERVICE_NAME = os.getenv("RENDER_SERVICE_NAME", "custom-online-evals")
+SERVICE_TYPE = "web_service"  # For web services
+RUNTIME = "python"  # Python runtime
+
+REPO_URL = os.getenv("REPO_URL")
+BRANCH = os.getenv("REPO_BRANCH", "main")
+
 
 def auth_headers() -> Dict[str, str]:
     if not LANGSMITH_API_KEY:
@@ -42,3 +55,40 @@ def parse_judge_model(model_string: str) -> tuple[str, str]:
     else:
         # Default to OpenAI if no provider specified
         return "openai", model_string.strip()
+    
+def validate_env_vars() -> None:
+    """
+    Validate that all required environment variables are set.
+    Raises ValueError with descriptive message if any are missing.
+    """
+    missing_vars = []
+    
+    # Required variables
+    if not LANGSMITH_API_KEY:
+        missing_vars.append("LANGSMITH_API_KEY")
+    
+    if not OPENAI_API_KEY:
+        missing_vars.append("OPENAI_API_KEY")
+    
+    if not RENDER_API_KEY:
+        missing_vars.append("RENDER_API_KEY")
+    
+    if not REPO_URL:
+        missing_vars.append("REPO_URL (or RENDER_REPO_URL)")
+    
+    if missing_vars:
+        raise ValueError(
+            f"Missing required environment variables: {', '.join(missing_vars)}\n"
+            f"Please set these in your .env file or environment."
+        )
+
+
+@traceable
+def first_run(question: str) -> str:
+    """Initial trace to set up the project."""
+    return "Hello, world!"
+
+
+def setup_project() -> None:
+    first_run("Welcome to LangSmith!")
+    
