@@ -18,7 +18,8 @@ from config import (
 )
 
 # Server configuration
-SERVER_START_COMMAND = "uvicorn services.server:app --host 0.0.0.0 --port $PORT"
+# Set PYTHONPATH to current directory to ensure Python can find the services module
+SERVER_START_COMMAND = "PYTHONPATH=. python -m uvicorn services.server:app --host 0.0.0.0 --port $PORT"
 
 
 def get_headers() -> Dict[str, str]:

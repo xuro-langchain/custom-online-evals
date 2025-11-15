@@ -67,8 +67,8 @@ Outputs:
 
 class Correctness(BaseModel):
     """Represents the correctness of a run."""
-    score: Field(bool, description="Whether the output is correct according to the criteria.")
-    comment: Field(str, description="A brief explanation of your score.")
+    score: bool = Field(description="Whether the output is correct according to the criteria.")
+    comment: str = Field(description="A brief explanation of your score.")
 
 # --- Evaluate Run ---
 async def evaluate_run(run: Run) -> Dict[str, Any]:
@@ -179,6 +179,5 @@ async def health_check():
     }
 
 # To run this server:
-# 1. Set LANGSMITH_API_KEY and OPENAI_API_KEY in .env
 # 2. Run with: uvicorn server:app --host 0.0.0.0 --port 8000
 # 3. Deploy to Render.com and use the URL in your webhook configuration
