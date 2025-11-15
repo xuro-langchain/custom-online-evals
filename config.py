@@ -56,25 +56,32 @@ def parse_judge_model(model_string: str) -> tuple[str, str]:
         # Default to OpenAI if no provider specified
         return "openai", model_string.strip()
     
-def validate_env_vars() -> None:
+def validate_env_vars(check_render: bool = False) -> None:
     """
     Validate that all required environment variables are set.
+    
+    Args:
+        check_render: If True, also validate Render-related environment variables.
+                     If False (default), only validate LangSmith and OpenAI variables.
+    
     Raises ValueError with descriptive message if any are missing.
     """
     missing_vars = []
     
-    # Required variables
+    # Always required variables
     if not LANGSMITH_API_KEY:
         missing_vars.append("LANGSMITH_API_KEY")
     
     if not OPENAI_API_KEY:
         missing_vars.append("OPENAI_API_KEY")
     
-    if not RENDER_API_KEY:
-        missing_vars.append("RENDER_API_KEY")
-    
-    if not REPO_URL:
-        missing_vars.append("REPO_URL (or RENDER_REPO_URL)")
+    # Render variables (only checked if deploying)
+    if check_render:
+        if not RENDER_API_KEY:
+            missing_vars.append("RENDER_API_KEY")
+        
+        if not REPO_URL:
+            missing_vars.append("REPO_URL (or RENDER_REPO_URL)")
     
     if missing_vars:
         raise ValueError(
