@@ -55,37 +55,53 @@ def create_web_service(
     branch: str,
     env_vars: Dict[str, str]
 ) -> Dict:
-    """Create a web service on Render with Git auto-deploy."""
+    """Create a web service on Render with Git auto-deploy.
+    
+    Note: Free tier services cannot be created via the Render API.
+    If you need a free tier service, create it manually in the Render dashboard first.
+    """
     
     # Check if service already exists
     existing = check_service_exists(service_name)
     if existing:
         service_id = existing.get("id")
-        print(f"Service '{service_name}' already exists (ID: {service_id})")
-        print("Updating environment variables...")
         set_environment_variables(service_id, env_vars)
         return existing
     
     # Prepare service configuration
+    # Structure based on existing service format
     service_config = {
         "type": SERVICE_TYPE,
         "name": service_name,
         "ownerId": owner_id,
-        "plan": "free",
-        "runtime": RUNTIME,
         "repo": repo_url,
         "branch": branch,
-        "autoDeploy": True,
-        "buildCommand": "pip install -r requirements.txt",
-        "startCommand": SERVER_START_COMMAND,
-        "rootDir": ".",
+        "autoDeploy": "yes",
+        "serviceDetails": {
+            "env": RUNTIME,
+            "envSpecificDetails": {
+                "buildCommand": "pip install -r requirements.txt",
+                "startCommand": SERVER_START_COMMAND,
+            },
+            "rootDir": ".",
+        }
     }
     
-    print(f"Creating web service '{service_name}'...")
+    # Remove any None values recursively
+    def clean_none(d):
+        if isinstance(d, dict):
+            return {k: clean_none(v) for k, v in d.items() if v is not None}
+        return d
+    
+    service_config = clean_none(service_config)
+    
+    # Render API expects payload wrapped in "service" key
+    payload = {"service": service_config}
+    
     response = requests.post(
         f"{RENDER_API_BASE}/services",
         headers=get_headers(),
-        json=service_config
+        json=payload
     )
     
     if response.status_code not in [200, 201]:
@@ -94,7 +110,6 @@ def create_web_service(
     
     service = response.json().get("service", response.json())
     service_id = service.get("id")
-    print(f"✓ Service created successfully (ID: {service_id})")
     
     # Set environment variables
     if env_vars:
@@ -105,8 +120,6 @@ def create_web_service(
 
 def set_environment_variables(service_id: str, env_vars: Dict[str, str]) -> None:
     """Set environment variables for a service."""
-    print(f"Setting environment variables...")
-    
     for key, value in env_vars.items():
         response = requests.post(
             f"{RENDER_API_BASE}/services/{service_id}/env-vars",
@@ -121,8 +134,6 @@ def set_environment_variables(service_id: str, env_vars: Dict[str, str]) -> None
             raise RuntimeError(
                 f"Failed to set environment variable {key}: {response.status_code} - {response.text}"
             )
-    
-    print(f"✓ Set {len(env_vars)} environment variable(s)")
 
 
 def get_service_url(service_id: str) -> str:
@@ -146,10 +157,12 @@ def get_service_url(service_id: str) -> str:
     return f"https://{SERVICE_NAME}.onrender.com"
 
 
+
 def main():
     # Validate all required environment variables
     validate_env_vars()
     try:
+        
         # Prepare environment variables
         env_vars = {
             "LANGSMITH_TRACING": "true",
