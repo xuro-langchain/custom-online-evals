@@ -16,8 +16,8 @@ class WebhookPayload:
     filter: Optional[str] = None
 
 
-def webhook_exists(name: str, target_type: Literal["dataset", "project"] = "dataset", target_id: str = None) -> bool:
-    """Check if a webhook rule already exists."""
+def webhook_exists(name: str, webhook_url: str, target_type: Literal["dataset", "project"] = "dataset", target_id: str = None) -> bool:
+    """Check if a webhook rule already exists with the same name, URL, and target."""
     url = f"{LANGSMITH_API_URL}/api/v1/runs/rules"
 
     params = {
@@ -31,12 +31,28 @@ def webhook_exists(name: str, target_type: Literal["dataset", "project"] = "data
     if existing.status_code >= 300:
         raise RuntimeError(f"Failed to search for webhook '{name}': {existing.status_code} {existing.text}")
     
-    existing = existing.json()
-    for rule in existing:
-        if rule.get("display_name") == name and rule.get("webhook_url"):
-            if target_type == "dataset" and rule.get("dataset_id") == target_id:
+    existing_rules = existing.json()
+    for rule in existing_rules:
+        # Check if display name matches
+        if rule.get("display_name") != name:
+            continue
+        
+        # Check if target matches
+        target_matches = False
+        if target_type == "dataset" and rule.get("dataset_id") == target_id:
+            target_matches = True
+        elif target_type == "project" and rule.get("session_id") == target_id:
+            target_matches = True
+        
+        if not target_matches:
+            continue
+        
+        # Check if webhook URL matches (webhooks are stored as an array)
+        webhooks = rule.get("webhooks", [])
+        for webhook in webhooks:
+            if isinstance(webhook, dict) and webhook.get("url") == webhook_url:
                 return True
-            elif target_type == "project" and rule.get("session_id") == target_id:
+            elif isinstance(webhook, str) and webhook == webhook_url:
                 return True
     return False
 
@@ -66,15 +82,17 @@ def create_webhook(name: str, webhook_url: str, target_name: str, target_type: L
     if not target:
         return None
     
-    if webhook_exists(name, target_type, target):
-        print(f"    - Webhook '{name}' already exists on the {target_type}. Skipping...")
+    if webhook_exists(name, webhook_url, target_type, target):
+        print(f"    - Webhook '{name}' with URL '{webhook_url}' already exists on the {target_type}. Skipping...")
         return None
     
     url = f"{LANGSMITH_API_URL}/runs/rules"
     
     body = {
         "display_name": name,
-        "webhook_url": webhook_url,
+        "webhooks": [{
+            "url": webhook_url,
+        }],
         "session_id": target if target_type == "project" else None,
         "dataset_id": target if target_type == "dataset" else None,
         "sampling_rate": sampling_rate,

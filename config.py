@@ -14,6 +14,8 @@ LANGSMITH_API_KEY = os.getenv("LANGSMITH_API_KEY")
 LANGSMITH_PROJECT = os.getenv("LANGSMITH_PROJECT")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+RENDER_URL = os.getenv("RENDER_URL")
+
 # Render Variables
 RENDER_API_KEY = os.getenv("RENDER_API_KEY")
 RENDER_OWNER_ID = os.getenv("RENDER_OWNER_ID")  # Your Render workspace ID

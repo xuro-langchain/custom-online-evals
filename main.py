@@ -1,18 +1,5 @@
-"""
-Main orchestration script for setting up the evaluation system.
-
-This script:
-1. Sets up the LangSmith tracing project and sends initial trace
-2. Optionally deploys the webhook judge service to Render (--deploy-render)
-3. Configures webhooks in LangSmith pointing to the deployed service
-4. Sends sample traces to trigger the evaluators
-
-Usage:
-    python main.py                    # Skip Render deployment (default)
-    python main.py --deploy-render     # Attempt Render deployment
-"""
-
 import sys
+import time
 import argparse
 from config import validate_env_vars, setup_project, RENDER_URL
 from services.render import main as deploy_service
@@ -89,6 +76,8 @@ def main():
         sys.exit(1)
     print("  ✓ Webhooks configured successfully")
     
+    time.sleep(3)
+
     # Step 5: Send sample traces to trigger evaluators
     print("Step 5: Sending sample traces...")
     try:
